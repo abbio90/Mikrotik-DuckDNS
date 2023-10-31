@@ -1,3 +1,4 @@
+/system script
 add dont-require-permissions=yes name=duckdns_script owner=installer policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="{\r\
     \n#----------SCRIPT INFORMATION---------------------------------------------------\r\
     \n#\r\
@@ -90,3 +91,9 @@ add dont-require-permissions=yes name=duckdns_script owner=installer policy=ftp,
     \n\r\
     \n}\r\
     \n}"
+
+/system scheduler
+add interval=2m name=schedule_duck-dns on-event="/system script run duckdns_script" \
+    policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    start-date=1970-03-01 start-time=00:00:00
+
