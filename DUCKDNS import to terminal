@@ -1,0 +1,92 @@
+add dont-require-permissions=yes name=duckdns_script owner=installer policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="{\r\
+    \n#----------SCRIPT INFORMATION---------------------------------------------------\r\
+    \n#\r\
+    \n# Script:  DUCKDNS script BY foisfabio.it\r\
+    \n# Version: 2.0\r\
+    \n# RouterOS v.7.11\r\
+    \n# Created: 29/07/2020\r\
+    \n# Updated: 03/09/2023\r\
+    \n# Author:  Fabio Fois\r\
+    \n# Website: https://foisfabio.it\r\
+    \n# Email: consulenza@foisfabio.it\r\
+    \n\r\
+    \n#----------MODIFY THIS SECTION AS NEEDED----------------------------------------\r\
+    \n\r\
+    \n\r\
+    \n# DuckDNS Sub Domain\r\
+    \n:local duckdnsSubDomain \"mario-red.duckdns.org\"\r\
+    \n\r\
+    \n# DuckDNS Token\r\
+    \n:local duckdnsToken \"123456-7890-abcd-efgh-ilmnopqrstuvz\"\r\
+    \n\r\
+    \n#SET ONLY IF YOU HAVE TWO STATIC PUBLIC IP'S\r\
+    \n:local TwoStaticIP \"yes\";\r\
+    \n:local ISP1Name \"myNET\"\r\
+    \n:local ISP2Name \"EOLO\"\r\
+    \n:local PublicIPISP1 \"1.2.3.4\"\r\
+    \n:local PublicIPISP2 \"5.6.7.8\"\r\
+    \n#------------------------------------------\r\
+    \n#----------NO MODIFY THIS SECTION----------\r\
+    \n#------------------------------------------\r\
+    \n:local defaultISP\r\
+    \n# Set true if you want to use IPv6\r\
+    \n:local ipv6mode false;\r\
+    \n\r\
+    \n# Online services which respond with your IPv4, two for redundancy\r\
+    \n:local ipDetectService1 \"https://api.ipify.org/\"\r\
+    \n:local ipDetectService2 \"https://api4.my-ip.io/ip.txt\"\r\
+    \n\r\
+    \n# Online services which respond with your IPv6, two for redundancy\r\
+    \n:local ipv6DetectService1 \"https://api64.ipify.org\"\r\
+    \n:local ipv6DetectService2 \"https://api6.my-ip.io/ip.txt\"\r\
+    \n\r\
+    \n\r\
+    \n#-------------------------------------------------------------------------------\r\
+    \n\r\
+    \n:local previousIP; :local currentIP\r\
+    \n# DuckDNS Full Domain (FQDN)\r\
+    \n:local duckdnsFullDomain \"\$duckdnsSubDomain\"\r\
+    \n\r\
+    \n#:log warning message=\"START: DuckDNS.org DDNS Update\"\r\
+    \n\r\
+    \nif (\$ipv6mode = true) do={\r\
+    \n\t:set ipDetectService1 \$ipv6DetectService1;\r\
+    \n\t:set ipDetectService2 \$ipv6DetectService2;\r\
+    \n\t:log error \"DuckDNS: ipv6 mode enabled\"\r\
+    \n}\r\
+    \n\r\
+    \n# Resolve current DuckDNS subdomain ip address\r\
+    \n:do {:set previousIP [:resolve \$duckdnsFullDomain]} \r\
+    \n\r\
+    \n# Detect our public IP adress useing special services\r\
+    \n:do {:set currentIP ([/tool fetch url=\$ipDetectService1 output=user as-value]->\"data\")} on-error={\r\
+    \n\t\t#Second try in case the first one is failed\r\
+    \n\t\t:do {:set currentIP ([/tool fetch url=\$ipDetectService2 output=user as-value]->\"data\")} \r\
+    \n\t};\r\
+    \n\t\r\
+    \n\r\
+    \n\r\
+    \n:if (\$currentIP != \$previousIP) do={\r\
+    \n\t:local duckRequestUrl \"https://www.duckdns.org/update\\\?domains=\$duckdnsSubDomain&token=\$duckdnsToken&ip=\$currentIP&verbose=true\"\r\
+    \n\r\
+    \n\r\
+    \n\t:local duckResponse\r\
+    \n\t:do {:set duckResponse ([/tool fetch url=\$duckRequestUrl output=user as-value]->\"data\")} on-error={\r\
+    \n\t\t:delay 5m;\r\
+    \n\t\t\t:do {:set duckResponse ([/tool fetch url=\$duckRequestUrl output=user as-value]->\"data\")} \r\
+    \n\t}\r\
+    \n    :if (\$TwoStaticIP = yes) do={\r\
+    \n\t    :if (\$currentIP = \$PublicIPISP1) do={\r\
+    \n\t\t    :set \$defaultISP \$ISP1Name\t} else={\r\
+    \n\t\t\t\t:if (\$currentIP != \$PublicIPISP1) do={\r\
+    \n\t\t        :set \$defaultISP \$ISP2Name\t\r\
+    \n\r\
+    \n\t}\r\
+    \n\t    \r\
+    \n}\r\
+    \n}\r\
+    \n:log warning \"CONNESSIONE DI DEFAULT \$defaultISP\"\r\
+    \n#:log warning message=\"END: DuckDNS.org DDNS Update finished\"\r\
+    \n\r\
+    \n}\r\
+    \n}"
